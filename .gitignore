@@ -1,0 +1,24 @@
+# Python environment
+env/
+.env
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# PyBuilder
+target/
+
+
+### Django ###
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+
+db.sqlite3
+
+/objectstorage/media
+
