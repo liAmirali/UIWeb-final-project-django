@@ -131,3 +131,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
+
+# Custom User Model
+AUTH_USER_MODEL = "user.AppUser"
