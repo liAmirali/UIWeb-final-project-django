@@ -68,3 +68,37 @@ class ListObjects(APIView):
 
             except ClientError as e:
                 raise e
+
+
+class DeleteObject(APIView):
+    def delete(self, request):
+        print(settings.ARVAN_ACCESS_KEY)
+        print(settings.ARVAN_SECRET_KEY)
+        print(settings.ARVAN_ENDPOINT)
+
+        try:
+            # S3 resource
+            s3_resource = boto3.resource(
+                's3',
+                endpoint_url=settings.ARVAN_ENDPOINT,
+                aws_access_key_id=settings.ARVAN_ACCESS_KEY,
+                aws_secret_access_key=settings.ARVAN_SECRET_KEY
+            )
+
+        except Exception as exc:
+            raise exc
+        else:
+            try:
+
+                bucket_name = 'djangowebstorage'
+                object_name = 'file.txt'
+
+                bucket = s3_resource.Bucket('djangowebstorage')
+                object = bucket.Object(object_name)
+
+                response = object.delete()
+
+                return Response("DONE!")
+
+            except ClientError as e:
+                raise e
