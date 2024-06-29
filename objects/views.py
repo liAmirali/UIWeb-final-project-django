@@ -1,3 +1,4 @@
+import logging
 import boto3
 from botocore.exceptions import ClientError
 
@@ -56,20 +57,12 @@ class ListObjects(APIView):
             raise exc
         else:
             try:
-                # file_path = "/mnt/hdd_storage/Uni/6/Web Prog/project/backend/objectstorage/myfile.txt"
-                # object_name = "my_data.txt"
 
-                bucket = s3_resource.Bucket('djangowebstorage')
-
-                # with open(file_path, "rb") as file:
-                #     bucket.put_object(
-                #         ACL='private',
-                #         Body=file,
-                #         Key=object_name
-                #     )
+                bucket_name = 'djangowebstorage'
+                bucket = s3_resource.Bucket(bucket_name)
 
                 for obj in bucket.objects.all():
-                    print("obj", obj.key)
+                    print(f"object_name: {obj.key}, last_modified: {obj.last_modified}")
 
                 return Response("DONE!")
 
