@@ -22,8 +22,8 @@ class UploadObjectView(APIView):
             raise exc
         else:
             try:
-                bucket = s3_resource.Bucket('bucket-name')
-                file_path = 'the/abs/path/to/file.txt'
+                bucket = s3_resource.Bucket('djangowebstorage')
+                file_path = './test.txt'
                 object_name = 'file.txt'
 
                 with open(file_path, "rb") as file:
@@ -35,6 +35,7 @@ class UploadObjectView(APIView):
             except ClientError as e:
                 raise e
         return Response({"message": "Object uploaded successfully."}, status=status.HTTP_201_CREATED)
+
 
 class ListObjects(APIView):
     def get(self, request):
