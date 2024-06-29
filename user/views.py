@@ -6,6 +6,10 @@ from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 
+from django.core.mail import send_mail
+
+from django.conf import settings
+
 from .serializers import SignUpSerializer
 from .tokens import email_verification_token
 
@@ -37,7 +41,9 @@ class ActivateUserView(views.APIView):
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
 
-        if user is not None and email_verification_token.check_token(user, token):
+        if user.is_email_verified:
+            return Response({'message': "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
+        elif user is not None and email_verification_token.check_token(user, token):
             user.is_active = True
             user.is_email_verified = True
             user.save()

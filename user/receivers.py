@@ -24,4 +24,5 @@ def send_verification_email(sender, instance, created, **kwargs):
             'uidb64': urlsafe_base64_encode(force_bytes(instance.pk)),
             'token': email_verification_token.make_token(instance),
         })
-        send_mail(mail_subject, message, 'support@objectstorage.com', [instance.email])
+        send_mail(subject=mail_subject, html_message=message, message=message,
+                  from_email="objectmanager@gmail.com", recipient_list=[instance.email])
