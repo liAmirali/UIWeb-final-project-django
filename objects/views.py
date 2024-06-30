@@ -1,6 +1,8 @@
 import boto3
 from botocore.exceptions import ClientError
 
+from uuid import uuid4
+
 from django.conf import settings
 
 from .models import AppObject
@@ -9,6 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 
 
 def get_s3_resource():
@@ -26,8 +29,10 @@ def get_s3_resource():
 
 class UploadObjectView(APIView):
     parser_classes = (MultiPartParser, )
+    permission_classes = (IsAuthenticated, )
 
     def put(self, request):
+        print("request.user", request.user)
         s3_resource = get_s3_resource()
         try:
             bucket = s3_resource.Bucket('djangowebstorage')
@@ -38,16 +43,16 @@ class UploadObjectView(APIView):
 
             print("in_memory_file", type(in_memory_file))
 
-            object_instance = AppObject(
-                name=in_memory_file.name, owner=request.user)
+            object_instance = AppObject(object_key=str(uuid4()),
+                                        name=in_memory_file.name,
+                                        owner=request.user)
+            object_instance.save()
 
             bucket.put_object(
                 ACL='private',
                 Body=in_memory_file,
                 Key=object_instance.object_key
             )
-
-            object_instance.save()
 
         except ClientError as e:
             raise e
