@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import environ
+from datetime import timedelta
 
 # Initialise environment variables
 env = environ.Env(
@@ -171,3 +172,9 @@ ARVAN_ENDPOINT = env('ARVAN_ENDPOINT')
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:8080",
 ]
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=100),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
