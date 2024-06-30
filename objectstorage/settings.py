@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -161,3 +162,9 @@ SITE_DOMAIN = env('SITE_DOMAIN')
 ARVAN_ACCESS_KEY = env('ARVAN_ACCESS_KEY')
 ARVAN_SECRET_KEY = env('ARVAN_SECRET_KEY')
 ARVAN_ENDPOINT = env('ARVAN_ENDPOINT')
+
+
+# CORS
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:8080",
+]
