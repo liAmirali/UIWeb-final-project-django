@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 
 
 def get_s3_resource():
@@ -62,20 +63,25 @@ class UploadObjectView(APIView):
 
 
 class ObjectListView(generics.ListAPIView):
+    class ObjectListPagination(PageNumberPagination):
+        page_size = 2
+        page_size_query_param = 'page_size'
+
     serializer_class = AppObjectSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = ObjectListPagination
 
     def get_queryset(self):
         user = self.request.user
         owned_objects = AppObject.objects.filter(owner=user)
         shared_objects = AppObject.objects.filter(shared_with=user)
-        return owned_objects | shared_objects  # Union of the two querysets
+        return (owned_objects | shared_objects).order_by('-uploaded_at')
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
-    
+
 
 class DeleteObject(APIView):
     def delete(self, request):
