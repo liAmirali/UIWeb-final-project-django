@@ -1,4 +1,3 @@
-import logging
 import boto3
 from botocore.exceptions import ClientError
 
@@ -7,10 +6,13 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 
 
 class UploadObjectView(APIView):
-    def post(self, request):
+    parser_classes = (MultiPartParser, )
+
+    def put(self, request):
         try:
             s3_resource = boto3.resource(
                 's3',
@@ -24,15 +26,19 @@ class UploadObjectView(APIView):
         else:
             try:
                 bucket = s3_resource.Bucket('djangowebstorage')
-                file_path = './test.txt'
-                object_name = 'file.txt'
+                in_memory_file = request.FILES.get('object', None)
 
-                with open(file_path, "rb") as file:
-                    bucket.put_object(
-                        ACL='private',
-                        Body=file,
-                        Key=object_name
-                    )
+                if in_memory_file is None:
+                    return Response({"message": "No file found."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                print("in_memory_file", type(in_memory_file))
+
+                bucket.put_object(
+                    ACL='private',
+                    Body=in_memory_file,
+                    Key=in_memory_file.name
+                )
+
             except ClientError as e:
                 raise e
         return Response({"message": "Object uploaded successfully."}, status=status.HTTP_201_CREATED)
@@ -62,7 +68,8 @@ class ListObjects(APIView):
                 bucket = s3_resource.Bucket(bucket_name)
 
                 for obj in bucket.objects.all():
-                    print(f"object_name: {obj.key}, last_modified: {obj.last_modified}")
+                    print(f"object_name: {obj.key}, last_modified: {
+                          obj.last_modified}")
 
                 return Response("DONE!")
 
@@ -89,12 +96,12 @@ class DeleteObject(APIView):
             raise exc
         else:
             try:
-
                 bucket_name = 'djangowebstorage'
-                object_name = 'file.txt'
+                bucket = s3_resource.Bucket(bucket_name)
 
-                bucket = s3_resource.Bucket('djangowebstorage')
+                object_name = "file.txt"
                 object = bucket.Object(object_name)
+                print(object)
 
                 response = object.delete()
 
