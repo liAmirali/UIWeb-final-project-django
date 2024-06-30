@@ -6,10 +6,11 @@ from uuid import uuid4
 from django.conf import settings
 
 from .models import AppObject
+from .serializers import AppObjectSerializer
 
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 
@@ -29,7 +30,7 @@ def get_s3_resource():
 
 class UploadObjectView(APIView):
     parser_classes = (MultiPartParser, )
-    permission_classes = (IsAuthenticated, )
+    permission_classes = [IsAuthenticated]
 
     def put(self, request):
         print("request.user", request.user)
@@ -60,23 +61,21 @@ class UploadObjectView(APIView):
         return Response({"message": "Object uploaded successfully."}, status=status.HTTP_201_CREATED)
 
 
-class ListObjects(APIView):
-    def get(self, request):
-        s3_resource = get_s3_resource()
+class ObjectListView(generics.ListAPIView):
+    serializer_class = AppObjectSerializer
+    permission_classes = [IsAuthenticated]
 
-        try:
-            bucket_name = 'djangowebstorage'
-            bucket = s3_resource.Bucket(bucket_name)
+    def get_queryset(self):
+        user = self.request.user
+        owned_objects = AppObject.objects.filter(owner=user)
+        shared_objects = AppObject.objects.filter(shared_with=user)
+        return owned_objects | shared_objects  # Union of the two querysets
 
-            for obj in bucket.objects.all():
-                print(f"object_name: {obj.key}, last_modified: {
-                    obj.last_modified}")
-
-            return Response("DONE!")
-
-        except ClientError as e:
-            raise e
-
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+    
 
 class DeleteObject(APIView):
     def delete(self, request):
