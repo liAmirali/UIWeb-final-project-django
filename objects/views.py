@@ -3,6 +3,8 @@ from botocore.exceptions import ClientError
 
 from django.conf import settings
 
+from .models import AppObject
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -36,12 +38,17 @@ class UploadObjectView(APIView):
 
             print("in_memory_file", type(in_memory_file))
 
+            object_instance = AppObject(
+                name=in_memory_file.name, owner=request.user)
+
             bucket.put_object(
                 ACL='private',
                 Body=in_memory_file,
-                Key=in_memory_file.name
-                
+                Key=object_instance.object_key
             )
+
+            object_instance.save()
+
         except ClientError as e:
             raise e
 
@@ -58,7 +65,7 @@ class ListObjects(APIView):
 
             for obj in bucket.objects.all():
                 print(f"object_name: {obj.key}, last_modified: {
-                        obj.last_modified}")
+                    obj.last_modified}")
 
             return Response("DONE!")
 
