@@ -6,7 +6,7 @@ from uuid import uuid4
 from django.conf import settings
 
 from .models import AppObject
-from .serializers import AppObjectSerializer
+from .serializers import AppObjectSerializer, AccessUpdateSerializer
 
 from rest_framework import status, generics
 from rest_framework.views import APIView
@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import PermissionDenied
 
 
 def get_s3_resource():
@@ -100,3 +101,29 @@ class DeleteObject(APIView):
 
         except ClientError as e:
             raise e
+
+
+class AccessUpdateView(generics.UpdateAPIView):
+    serializer_class = AccessUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def check_object_permissions(self, request, obj):
+        # Check if the user is the owner of the object
+        if not obj.owner == request.user:
+            raise PermissionDenied("You do not have permission to modify this object's access.")
+
+    def put(self, request, *args, **kwargs):
+        object_key = request.data['object_key']
+        instance = AppObject.objects.get(object_key=object_key)
+        self.check_object_permissions(request, instance)  # Ensure user is owner
+        serializer = self.get_serializer(instance, data=request.data)
+
+        if serializer.is_valid():
+            # Update shared_with field
+            print(serializer.validated_data['shared_with'])
+            instance.shared_with.set(serializer.validated_data['shared_with'])
+            print("instance.shared_with", instance.shared_with)
+            instance.save()
+            return Response({"message": "Access updated successfully."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
