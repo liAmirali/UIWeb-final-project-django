@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from rest_framework import generics, views
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -50,3 +51,7 @@ class ActivateUserView(views.APIView):
             return Response({'message': 'Thank you for your email confirmation. Now you can log in.'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'Activation link is invalid!'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def showActivate(request):
+    return render(request, 'user/acc_active_email.html')
