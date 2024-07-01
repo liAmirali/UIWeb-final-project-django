@@ -85,22 +85,33 @@ class ObjectListView(generics.ListAPIView):
 
 
 class DeleteObject(APIView):
+    permission_classes = [IsAuthenticated]
+
     def delete(self, request):
+        object_key = request.data.get('object_key')
+
+        if not object_key:
+            return Response({"error": "Object key not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
         s3_resource = get_s3_resource()
         try:
+            # Delete from the bucket
             bucket_name = 'djangowebstorage'
             bucket = s3_resource.Bucket(bucket_name)
+            s3_object = bucket.Object(object_key)
+            s3_object.delete()
 
-            object_name = "file.txt"
-            object = bucket.Object(object_name)
-            print(object)
+            # Delete from the database
+            app_object = AppObject.objects.get(object_key=object_key)
+            app_object.delete()
 
-            response = object.delete()
+            return Response({"message": "Object deleted successfully."}, status=status.HTTP_200_OK)
 
-            return Response("DONE!")
-
+        except AppObject.DoesNotExist:
+            return Response({"error": "Object not found in the database."}, status=status.HTTP_404_NOT_FOUND)
         except ClientError as e:
-            raise e
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class AccessUpdateView(generics.UpdateAPIView):
