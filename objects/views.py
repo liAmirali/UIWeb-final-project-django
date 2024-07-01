@@ -2,10 +2,12 @@ import boto3
 from botocore.exceptions import ClientError
 
 from uuid import uuid4
+import os
+import tempfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-
+from django.http import FileResponse
 
 from .models import AppObject
 from .serializers import AppObjectSerializer, AccessUpdateSerializer
@@ -67,6 +69,52 @@ class UploadObjectView(APIView):
             raise e
 
         return Response({"message": "Object uploaded successfully."}, status=status.HTTP_201_CREATED)
+
+
+class DownloadObjectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        object_key = request.query_params.get('object_key')
+
+        if not object_key:
+            return Response({"error": "Object key not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Fetch the object from the database
+            app_object = AppObject.objects.get(object_key=object_key)
+        except AppObject.DoesNotExist:
+            return Response({"error": "Object not found in the database."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user has access to the object
+        if request.user != app_object.owner and request.user not in app_object.shared_with.all():
+            return Response({"error": "You do not have permission to access this object."}, status=status.HTTP_403_FORBIDDEN)
+
+        s3_resource = get_s3_resource()
+        try:
+            # Temporary file path to store the downloaded object
+            temp_file = tempfile.NamedTemporaryFile(delete=False)
+            download_path = app_object.name
+
+            # Download the file from the S3 bucket
+            bucket = s3_resource.Bucket('djangowebstorage')
+            bucket.download_file(object_key, download_path)
+
+            # Return the file as a response
+            temp_file.seek(0)
+            response = FileResponse(open(
+                download_path, 'rb'), as_attachment=True, filename=os.path.basename(app_object.name))
+
+            # Cleanup the temporary file
+            os.remove(download_path)
+            return response
+
+        except ClientError as e:
+            print(e)
+            return Response({"error": "Failed to download object."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            print(e)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ObjectListView(generics.ListAPIView):
