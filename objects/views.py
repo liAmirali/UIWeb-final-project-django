@@ -4,9 +4,13 @@ from botocore.exceptions import ClientError
 from uuid import uuid4
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+
 
 from .models import AppObject
 from .serializers import AppObjectSerializer, AccessUpdateSerializer
+
+from user.serializers import UserSerializer
 
 from rest_framework import status, generics
 from rest_framework.views import APIView
@@ -15,6 +19,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied
+
+User = get_user_model()
 
 
 def get_s3_resource():
@@ -113,20 +119,21 @@ class DeleteObject(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class AccessUpdateView(generics.UpdateAPIView):
     serializer_class = AccessUpdateSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def check_object_permissions(self, request, obj):
         # Check if the user is the owner of the object
         if not obj.owner == request.user:
-            raise PermissionDenied("You do not have permission to modify this object's access.")
+            raise PermissionDenied(
+                "You do not have permission to modify this object's access.")
 
     def put(self, request, *args, **kwargs):
         object_key = request.data['object_key']
         instance = AppObject.objects.get(object_key=object_key)
-        self.check_object_permissions(request, instance)  # Ensure user is owner
+        self.check_object_permissions(
+            request, instance)  # Ensure user is owner
         serializer = self.get_serializer(instance, data=request.data)
 
         if serializer.is_valid():
@@ -138,3 +145,29 @@ class AccessUpdateView(generics.UpdateAPIView):
             return Response({"message": "Access updated successfully."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UsersAccessView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        object_key = request.query_params.get('object_key')
+
+        if not object_key:
+            return Response({"error": "Object key not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            app_object = AppObject.objects.get(object_key=object_key)
+        except AppObject.DoesNotExist:
+            return Response({"error": "Object not found in the database."}, status=status.HTTP_404_NOT_FOUND)
+
+        users = User.objects.all()
+        response_data = []
+
+        for user in users:
+            user_data = UserSerializer(user).data
+            user_data['has_access'] = user in app_object.shared_with.all()
+            user_data['is_owner'] = user == app_object.owner
+            response_data.append(user_data)
+
+        return Response(response_data, status=status.HTTP_200_OK)

@@ -16,3 +16,10 @@ class SignUpSerializer(serializers.ModelSerializer):
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
         return Response({'message': 'Please confirm your email address to complete the registration'}, status=status.HTTP_201_CREATED)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name',
+                  'username', 'email',]
