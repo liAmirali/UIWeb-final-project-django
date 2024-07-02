@@ -9,13 +9,19 @@ User = get_user_model()
 class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name',
-                  'username', 'email', 'password']
+        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'password']
         extra_kwargs = {'password': {'write_only': True}}
 
-    def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        return Response({'message': 'Please confirm your email address to complete the registration'}, status=status.HTTP_201_CREATED)
+    def create(self, validated_data):
+        user = User(
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            username=validated_data['username'],
+            email=validated_data['email']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
 
 
 class UserSerializer(serializers.ModelSerializer):

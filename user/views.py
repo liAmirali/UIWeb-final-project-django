@@ -18,17 +18,7 @@ User = get_user_model()
 
 class SignUpUserView(generics.CreateAPIView):
     serializer_class = SignUpSerializer
-    model = User
-    permission_classes = [
-        permissions.AllowAny  # Or anon users can't register
-    ]
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            self.perform_create(serializer)
-            return Response({'message': 'Please confirm your email address to complete the registration'}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = [permissions.AllowAny]
 
 
 class ActivateUserView(views.APIView):
