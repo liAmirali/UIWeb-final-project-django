@@ -12,7 +12,7 @@ class AppObjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppObject
         fields = ['object_key', 'name', 'owner',
-                  'shared_with', 'uploaded_at', 'is_owner']
+                  'shared_with', 'uploaded_at', 'is_owner', 'size', 'mime_type', 'file_type']
 
     def get_is_owner(self, obj):
         request = self.context.get('request', None)

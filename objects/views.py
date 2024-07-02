@@ -4,6 +4,7 @@ from botocore.exceptions import ClientError
 from uuid import uuid4
 import os
 import tempfile
+import mimetypes
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -52,11 +53,31 @@ class UploadObjectView(APIView):
             if in_memory_file is None:
                 return Response({"message": "No file found."}, status=status.HTTP_400_BAD_REQUEST)
 
-            print("in_memory_file", type(in_memory_file))
+            # Get the MIME type
+            mime_type, _ = mimetypes.guess_type(in_memory_file.name)
+            if mime_type is None:
+                mime_type = 'application/octet-stream'  # Default MIME type if not detected
+
+            # Determine file type based on MIME type or file extension
+            file_extension = in_memory_file.name.split('.')[-1].lower()
+            if mime_type.startswith('audio/'):
+                file_type = 'music'
+            elif mime_type == 'application/pdf':
+                file_type = 'pdf'
+            elif mime_type.startswith('video/'):
+                file_type = 'video'
+            elif mime_type.startswith('image/') or file_extension in ['png', 'jpeg', 'jpg']:
+                file_type = 'image'
+            else:
+                file_type = 'others'
 
             object_instance = AppObject(object_key=str(uuid4()),
                                         name=in_memory_file.name,
-                                        owner=request.user)
+                                        owner=request.user,
+                                        size=in_memory_file.size,
+                                        mime_type=mime_type,
+                                        file_type=file_type
+                                        )
             object_instance.save()
 
             bucket.put_object(
