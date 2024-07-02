@@ -16,5 +16,4 @@ urlpatterns = [
     path('verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('activate/<uidb64>/<token>/',
          views.ActivateUserView.as_view(), name='activate'),
-    path("showactivate/", views.showActivate, name="show-activate")
 ]
