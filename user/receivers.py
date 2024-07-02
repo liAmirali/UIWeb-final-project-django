@@ -20,7 +20,7 @@ def send_verification_email(sender, instance, created, **kwargs):
         mail_subject = 'Activate your account.'
         message = render_to_string('user/acc_active_email.html', {
             'user': instance,
-            'domain': domain,
+            'domain': "localhost:8080/",
             'uidb64': urlsafe_base64_encode(force_bytes(instance.pk)),
             'token': email_verification_token.make_token(instance),
         })
