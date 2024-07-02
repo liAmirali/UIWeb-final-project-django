@@ -56,7 +56,8 @@ class UploadObjectView(APIView):
 
             object_instance = AppObject(object_key=str(uuid4()),
                                         name=in_memory_file.name,
-                                        owner=request.user)
+                                        owner=request.user,
+                                        size=in_memory_file.size)
             object_instance.save()
 
             bucket.put_object(

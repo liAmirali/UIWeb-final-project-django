@@ -9,6 +9,7 @@ class AppObject(models.Model):
     name = models.CharField(max_length=100)
     owner = models.ForeignKey(
         User, related_name='owned_objects', on_delete=models.SET_NULL, null=True)
+    size = models.IntegerField()
     shared_with = models.ManyToManyField(User, related_name='shared_objects')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
