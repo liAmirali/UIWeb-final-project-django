@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
-from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
@@ -11,13 +12,23 @@ User = get_user_model()
 class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name',
-                  'username', 'email', 'password']
+        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'password']
         extra_kwargs = {
             'password': {'write_only': True},
             'first_name': {'required': False, 'allow_blank': True},
             'last_name': {'required': False, 'allow_blank': True},
         }
+
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.messages)
+        return value
+
+    def validate(self, attrs):
+        self.validate_password(attrs.get('password'))
+        return super().validate(attrs)
 
     def create(self, validated_data):
         user = User(
