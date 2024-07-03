@@ -9,6 +9,7 @@ import mimetypes
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import FileResponse
+from django.core.mail import send_mail
 
 from .models import AppObject
 from .serializers import AppObjectSerializer, AccessUpdateSerializer
@@ -203,14 +204,33 @@ class AccessUpdateView(generics.UpdateAPIView):
         instance = AppObject.objects.get(object_key=object_key)
         self.check_object_permissions(
             request, instance)  # Ensure user is owner
+
+        # Get the current set of users who have access
+        old_shared_users = set(instance.shared_with.all())
+
         serializer = self.get_serializer(instance, data=request.data)
 
         if serializer.is_valid():
             # Update shared_with field
-            print(serializer.validated_data['shared_with'])
             instance.shared_with.set(serializer.validated_data['shared_with'])
-            print("instance.shared_with", instance.shared_with)
             instance.save()
+
+            # Get the new set of users who have access
+            new_shared_users = set(instance.shared_with.all())
+            
+            # Determine newly added users
+            newly_added_users = new_shared_users - old_shared_users
+
+            # Send email to newly added users
+            for user in newly_added_users:
+                send_mail(
+                    'File Shared with You',
+                    'A file has been shared with you. Please check your account for access.',
+                    'liamirali.lotfi@gmail.com',  # Replace with your sender email
+                    [user.email],
+                    fail_silently=False,
+                )
+
             return Response({"message": "Access updated successfully."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
