@@ -151,7 +151,7 @@ class ObjectListView(generics.ListAPIView):
         user = self.request.user
         owned_objects = AppObject.objects.filter(owner=user)
         shared_objects = AppObject.objects.filter(shared_with=user)
-        return (owned_objects | shared_objects).order_by('-uploaded_at')
+        return (owned_objects | shared_objects).distinct().order_by('-uploaded_at')
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
