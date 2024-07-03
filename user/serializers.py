@@ -48,7 +48,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if '@' in username_or_email:
             user = authenticate(request=self.context.get(
                 'request'), email=username_or_email, password=password)
-            print(user)
         else:
             user = authenticate(request=self.context.get(
                 'request'), username=username_or_email, password=password)
