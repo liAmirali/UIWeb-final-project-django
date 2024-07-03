@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
 from django.contrib.auth.password_validation import validate_password
@@ -12,7 +13,8 @@ User = get_user_model()
 class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'password']
+        fields = ['id', 'first_name', 'last_name',
+                  'username', 'email', 'password']
         extra_kwargs = {
             'password': {'write_only': True},
             'first_name': {'required': False, 'allow_blank': True},
@@ -26,8 +28,22 @@ class SignUpSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(e.messages)
         return value
 
+    def validate_username(self, value):
+        if len(value) < 4:
+            raise serializers.ValidationError(
+                'Username must be at least 4 characters long.')
+        if not re.match("^[a-zA-Z]*$", value):
+            raise serializers.ValidationError(
+                'Username must only contain alphabets.')
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(
+                'A user with that username already exists.')
+
+        return value
+
     def validate(self, attrs):
         self.validate_password(attrs.get('password'))
+        self.validate_username(attrs.get('username'))
         return super().validate(attrs)
 
     def create(self, validated_data):

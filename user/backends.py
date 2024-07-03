@@ -15,7 +15,7 @@ class EmailOrUsernameModelBackend(ModelBackend):
             if email is not None:
                 user = User.objects.get(email=email)
             else:
-                user = User.objects.get(username=username)
+                user = User.objects.get(username__iexact=username)
         except User.DoesNotExist:
             return
         if user.check_password(password) and self.user_can_authenticate(user):

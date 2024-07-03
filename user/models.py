@@ -1,5 +1,9 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
+from django.utils.translation import gettext_lazy as _
+
 
 class AppUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
@@ -19,9 +23,9 @@ class AppUserManager(BaseUserManager):
 
         return self.create_user(email, username, password, **extra_fields)
 
+
 class AppUser(AbstractUser):
     # Making email field unique
     email = models.EmailField(unique=True)
     is_email_verified = models.BooleanField(default=False)
     objects = AppUserManager()
-
