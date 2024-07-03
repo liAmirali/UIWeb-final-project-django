@@ -3,7 +3,7 @@ from rest_framework import generics, views
 from rest_framework import permissions, status
 from rest_framework.response import Response
 
-from rest_framework_simplejwt.views import TokenVerifyView
+from rest_framework_simplejwt.views import TokenVerifyView, TokenObtainPairView
 from rest_framework_simplejwt.tokens import UntypedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 
-from .serializers import SignUpSerializer
+from .serializers import SignUpSerializer, CustomTokenObtainPairSerializer
 from .tokens import email_verification_token
 
 User = get_user_model()
@@ -44,7 +44,6 @@ class ActivateUserView(views.APIView):
 
 
 class CustomTokenVerifyView(TokenVerifyView):
-
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
 
@@ -70,3 +69,7 @@ class CustomTokenVerifyView(TokenVerifyView):
 
         except User.DoesNotExist:
             return Response({'error': 'Token is invalid.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

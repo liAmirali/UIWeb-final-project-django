@@ -1,7 +1,9 @@
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import update_last_login
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from rest_framework.response import Response
-from rest_framework import status
 
 User = get_user_model()
 
@@ -34,3 +36,42 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'first_name', 'last_name',
                   'username', 'email',]
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        username_or_email = attrs.get('username')
+        password = attrs.get('password')
+
+        # Check if the username_or_email is an email
+        if '@' in username_or_email:
+            user = authenticate(request=self.context.get(
+                'request'), email=username_or_email, password=password)
+            print(user)
+        else:
+            user = authenticate(request=self.context.get(
+                'request'), username=username_or_email, password=password)
+
+        if user is not None and user.is_active and user.is_email_verified:
+            data = {}
+            refresh = self.get_token(user)
+
+            data['refresh'] = str(refresh)
+            data['access'] = str(refresh.access_token)
+
+            if self.context.get('request'):
+                update_last_login(None, user)
+
+            data['user'] = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+            }
+
+            return data
+        else:
+            raise serializers.ValidationError(
+                'No active account found with the given credentials')
