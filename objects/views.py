@@ -168,9 +168,14 @@ class DeleteObject(APIView):
 
         if not object_key:
             return Response({"error": "Object key not provided."}, status=status.HTTP_400_BAD_REQUEST)
+    
 
         s3_resource = get_s3_resource()
         try:
+            app_object = AppObject.objects.get(object_key=object_key)
+            if app_object.owner != request.user:
+                return Response({"error": "You do not have permission to access this object."}, status=status.HTTP_403_FORBIDDEN)
+
             # Delete from the bucket
             bucket_name = 'djangowebstorage'
             bucket = s3_resource.Bucket(bucket_name)
@@ -178,7 +183,6 @@ class DeleteObject(APIView):
             s3_object.delete()
 
             # Delete from the database
-            app_object = AppObject.objects.get(object_key=object_key)
             app_object.delete()
 
             return Response({"message": "Object deleted successfully."}, status=status.HTTP_200_OK)
