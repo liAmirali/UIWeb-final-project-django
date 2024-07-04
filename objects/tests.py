@@ -194,3 +194,58 @@ class DeleteObjectViewTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['error'], "Object not found in the database.")
+class AccessUpdateViewTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='testuser', email='test@test.com', password='testpass')
+        self.other_user = User.objects.create_user(username='otheruser', email='other@test.com', password='otherpass')
+        self.app_object = AppObject.objects.create(
+            object_key='test-key',
+            name='testfile.txt',
+            owner=self.user,
+            size=100,
+            mime_type='text/plain',
+            file_type='others'
+        )
+        self.url = reverse('update-access')
+
+    @patch('django.core.mail.send_mail')
+    def test_update_access(self, mock_send_mail):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url, {
+            'object_key': self.app_object.object_key,
+            'shared_with': [self.other_user.id]
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], "Access updated successfully.")
+
+
+class UsersAccessViewTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='testuser', email='test@test.com', password='testpass')
+        self.other_user = User.objects.create_user(username='otheruser', email='other@test.com', password='otherpass')
+        self.app_object = AppObject.objects.create(
+            object_key='test-key',
+            name='testfile.txt',
+            owner=self.user,
+            size=100,
+            mime_type='text/plain',
+            file_type='others'
+        )
+        self.app_object.shared_with.add(self.other_user)
+        self.url = reverse('people-shared') 
+
+    def test_users_access(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.url, {'object_key': self.app_object.object_key})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        for user_data in response.data:
+            if user_data['username'] == 'testuser':
+                self.assertTrue(user_data['is_owner'])
+            else:
+                self.assertFalse(user_data['is_owner'])
+                self.assertTrue(user_data['has_access'])

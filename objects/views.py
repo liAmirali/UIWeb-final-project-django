@@ -230,9 +230,8 @@ class AccessUpdateView(generics.UpdateAPIView):
                 send_mail(
                     'File Shared with You',
                     'A file has been shared with you. Please check your account for access.',
-                    'liamirali.lotfi@gmail.com',  # Replace with your sender email
+                    'liamirali.lotfi@gmail.com',
                     [user.email],
-                    fail_silently=False,
                 )
 
             return Response({"message": "Access updated successfully."}, status=status.HTTP_200_OK)
