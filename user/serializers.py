@@ -79,7 +79,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             user = authenticate(request=self.context.get(
                 'request'), username=username_or_email, password=password)
 
-        if user is not None and user.is_active and user.is_email_verified:
+        if user is not None and user.is_active:
             data = {}
             refresh = self.get_token(user)
 
